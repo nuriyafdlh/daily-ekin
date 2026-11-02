@@ -72,9 +72,25 @@
   }
 }
 
-/* Reserve the top mobile strip for the hosting badge and device safe area. */
+/* Keep mobile controls above the hosting badge at the bottom of the viewport. */
 @media screen and (max-width: 639px) {
+  :root {
+    --mobile-bottom-clearance: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
   .app-header {
-    padding-top: calc(48px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .mobile-navigation {
+    bottom: var(--mobile-bottom-clearance);
+  }
+
+  .app-content {
+    padding-bottom: calc(80px + var(--mobile-bottom-clearance));
+  }
+
+  .app-toast {
+    bottom: calc(80px + var(--mobile-bottom-clearance));
   }
 }
