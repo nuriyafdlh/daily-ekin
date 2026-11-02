@@ -71,3 +71,10 @@
     font-weight: 700 !important;
   }
 }
+
+/* Reserve the top mobile strip for the hosting badge and device safe area. */
+@media screen and (max-width: 639px) {
+  .app-header {
+    padding-top: calc(48px + env(safe-area-inset-top, 0px));
+  }
+}
