@@ -100,7 +100,18 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     cachedAccessToken = credential?.accessToken || null;
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
-    console.error('Google Sign-In Error:', error);
+    if (error?.code === 'auth/unauthorized-domain') {
+      const hostname = window.location.hostname;
+      const domainError = new Error(
+        `Domain ${hostname} belum diizinkan untuk login Google. ` +
+        'Administrator perlu membuka Firebase Console → Authentication → Settings → ' +
+        `Authorized domains, lalu menambahkan ${hostname} tanpa https:// atau path. ` +
+        'Setelah disimpan, muat ulang halaman dan coba masuk kembali.'
+      );
+      // Preserve the Firebase code for callers that handle authentication errors.
+      Object.assign(domainError, { code: error.code });
+      throw domainError;
+    }
     throw error;
   } finally {
     isSigningIn = false;
