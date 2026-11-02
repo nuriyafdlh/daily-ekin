@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "CloudState": {
+      "title": "CloudState",
+      "description": "State sinkronisasi kinerja harian pegawai di cloud Firestore",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "ID pengguna pemilik data" },
+        "updatedAt": { "type": "string", "description": "Waktu pembaruan data ISO string" },
+        "totalRhk": { "type": "number", "description": "Jumlah total RHK" },
+        "totalKegiatan": { "type": "number", "description": "Jumlah total log kegiatan" },
+        "profile": { "type": "object", "description": "Data profil ASN" },
+        "rhk": { "type": "array", "description": "Daftar sasaran kinerja RHK" },
+        "log": { "type": "array", "description": "Daftar riwayat kinerja harian" },
+        "ringkas": { "type": "object", "description": "Ringkasan rencana aksi bulanan" }
+      },
+      "required": ["userId", "updatedAt"]
+    },
+    "BackupItem": {
+      "title": "BackupItem",
+      "description": "Riwayat snapshot cadangan kinerja ASN di Firestore",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID unik cadangan" },
+        "userId": { "type": "string", "description": "ID pengguna pemilik cadangan" },
+        "label": { "type": "string", "description": "Label atau nama cadangan" },
+        "createdAt": { "type": "string", "description": "Waktu pencadangan ISO string" },
+        "totalRhk": { "type": "number", "description": "Jumlah RHK pada cadangan ini" },
+        "totalKegiatan": { "type": "number", "description": "Jumlah kegiatan pada cadangan ini" },
+        "profile": { "type": "object", "description": "Snapshot profil ASN" },
+        "rhk": { "type": "array", "description": "Snapshot daftar RHK" },
+        "log": { "type": "array", "description": "Snapshot daftar log" },
+        "ringkas": { "type": "object", "description": "Snapshot rencana aksi" }
+      },
+      "required": ["id", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/cloud_state/{userId}": {
+      "schema": "CloudState",
+      "description": "Dokumen state kinerja terkini per pengguna"
+    },
+    "/backups/{backupId}": {
+      "schema": "BackupItem",
+      "description": "Koleksi snapshot riwayat cadangan cloud pengguna"
+    }
+  }
+}

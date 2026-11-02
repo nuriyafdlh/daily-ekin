@@ -1,0 +1,8 @@
+{
+  "name": "Kinerja Harian ASN Modern",
+  "description": "Aplikasi pencatatan kinerja harian ASN dan laporan SKP bulanan modern dengan klasifikasi RHK otomatis bertenaga AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

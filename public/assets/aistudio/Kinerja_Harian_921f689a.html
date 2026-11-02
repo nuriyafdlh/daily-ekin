@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kinerja Harian</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mu:#667085;--bd:#dde1e8;--pr:#1b6ef3;--prt:#fff;--dg:#c0392b;--ac:#eaf1fe;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151b;--card:#1b2029;--tx:#e8ebf1;--mu:#98a1b3;--bd:#2c3342;--pr:#5b95ff;--prt:#0b1020;--dg:#ff7b6b;--ac:#1f2a42;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151b;--card:#1b2029;--tx:#e8ebf1;--mu:#98a1b3;--bd:#2c3342;--pr:#5b95ff;--prt:#0b1020;--dg:#ff7b6b;--ac:#1f2a42;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0 0 10px}
+.sub{color:var(--mu);font-size:13px}
+nav{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}
+nav button{flex:1;min-width:110px}
+button,.btn{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 12px;border-radius:8px;cursor:pointer}
+button.on,button.pri{background:var(--pr);color:var(--prt);border-color:var(--pr)}
+button.dg{color:var(--dg)}button.sm{padding:3px 8px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mu);margin:8px 0 3px}
+input,textarea,select{width:100%;font:inherit;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+textarea{min-height:80px;resize:vertical}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.item{border-top:1px solid var(--bd);padding:10px 0;display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.item:first-child{border-top:0}
+.tag{display:inline-block;background:var(--ac);color:var(--pr);border-radius:6px;padding:1px 7px;font-size:12px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid var(--bd);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--ac)}
+.grp{font-weight:600;margin:14px 0 6px}
+.empty{color:var(--mu);text-align:center;padding:16px}
+.hide{display:none}
+@media print{body{background:#fff;color:#000}.noprint{display:none!important}.card{border:0;padding:0}th{background:#eee!important;color:#000}th,td{border-color:#888}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="noprint">
+<h1>Kinerja Harian</h1>
+<div class="sub">Isi RHK dulu, lalu catat kinerja harian, lalu cetak laporannya. Data tersimpan di browser ini.</div>
+<nav>
+<button data-t="rhk" class="on">1. RHK</button>
+<button data-t="log">2. Kinerja Harian</button>
+<button data-t="lap">3. Laporan</button>
+<button data-t="set">Pengaturan</button>
+</nav>
+</div>
+
+<section id="t-rhk" class="card noprint">
+<h2>Rencana Hasil Kerja (RHK)</h2>
+<form onsubmit="return false"></form>
+<label>Uraian RHK</label>
+<textarea id="rhkNama" placeholder="Contoh: Terkelolanya aduan masyarakat melalui SP4N-LAPOR! sesuai SLA"></textarea>
+<label>Indikator / target (opsional)</label>
+<input id="rhkInd" placeholder="Contoh: 100% aduan ditindaklanjuti ≤ 5 hari kerja">
+<p><button class="pri" id="rhkAdd">Simpan RHK</button> <button id="rhkCancel" class="hide">Batal</button></p>
+<div id="rhkList"></div>
+</section>
+
+<section id="t-log" class="hide noprint">
+<div class="card">
+<h2>Input Kinerja Harian</h2>
+<div class="row">
+<div><label>Tanggal</label><input type="date" id="lTgl"></div>
+<div><label>Jam mulai</label><input type="time" id="lMulai" value="07:30"></div>
+<div><label>Jam selesai</label><input type="time" id="lSelesai" value="16:00"></div>
+</div>
+<label>Uraian kegiatan</label>
+<textarea id="lUr" placeholder="Apa yang Anda kerjakan?"></textarea>
+<label>Bukti dukung (tautan atau nama berkas)</label>
+<input id="lBukti" placeholder="https://drive.google.com/… atau nama_berkas.pdf">
+<p><button class="pri" id="lAdd">Simpan kinerja</button> <button id="lCancel" class="hide">Batal</button></p>
+</div>
+<div class="card">
+<h2>Riwayat</h2>
+<label>Filter bulan</label>
+<input type="month" id="lFilter">
+<div id="lList"></div>
+</div>
+</section>
+
+<section id="t-lap" class="hide">
+<div class="card noprint">
+<h2>Buat Laporan</h2>
+<div class="row">
+<div><label>Jenis</label><select id="rJenis"><option value="h">Harian</option><option value="b">Bulanan</option></select></div>
+<div id="rTglBox"><label>Tanggal</label><input type="date" id="rTgl"></div>
+<div id="rBlnBox" class="hide"><label>Bulan</label><input type="month" id="rBln"></div>
+</div>
+<p><button class="pri" id="rAI">✨ Klasifikasi otomatis (AI)</button> <button id="rRingkas" class="hide">📝 Ringkas rencana aksi (AI)</button> <button id="rCetak">Cetak / Simpan PDF</button></p>
+<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="rUlang" style="width:auto"> Klasifikasi ulang semua kegiatan pada periode ini</label>
+<div class="sub" id="rStat"></div>
+</div>
+<div class="card" id="laporan"></div>
+</section>
+
+<section id="t-set" class="hide card noprint">
+<h2>Pengaturan & Cadangan</h2>
+<div class="row">
+<div><label>Nama pegawai</label><input id="sNama"></div>
+<div><label>NIP</label><input id="sNip"></div>
+<div><label>Jabatan</label><input id="sJab"></div>
+<div><label>Unit kerja</label><input id="sUnit"></div>
+</div>
+<p><button class="pri" id="sSimpan">Simpan identitas</button></p>
+<h2 style="margin-top:18px">Cadangan data</h2>
+<p class="sub">Data hanya ada di browser ini. Unduh cadangan secara berkala, atau pindahkan data ke perangkat lain.</p>
+<button id="bExp">Unduh cadangan (.json)</button>
+<label>Pulihkan dari cadangan</label>
+<input type="file" id="bImp" accept="application/json">
+</section>
+</div>
+
+<script>
+const KEY='kinerja-harian-v1';
+let S={prof:{nama:'Nuriya Fadilah',nip:'',jab:'Penata Kelola Sistem dan Teknologi Informasi',unit:'Dinas Komunikasi dan Informatika Kabupaten Bangkalan'},rhk:[],log:[]};
+try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=Object.assign(S,o)}}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=i=>document.getElementById(i);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const BLN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const tglID=d=>{const x=new Date(d+'T00:00:00');return `${HARI[x.getDay()]}, ${x.getDate()} ${BLN[x.getMonth()]} ${x.getFullYear()}`};
+const tglPendek=d=>{const x=new Date(d+'T00:00:00');return `${x.getDate()} ${BLN[x.getMonth()].slice(0,3)} ${x.getFullYear()}`};
+const durasi=(a,b)=>{const m=(b.slice(0,2)*60+ +b.slice(3))-(a.slice(0,2)*60+ +a.slice(3));return m>0?m:0};
+const fmtDur=m=>`${Math.floor(m/60)} j ${m%60} m`;
+const bukti=b=>!b?'-':/^https?:\/\//i.test(b)?`<a href="${esc(b)}" target="_blank" rel="noopener">Tautan</a>`:esc(b);
+const today=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+
+// Tabs
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.t));
+function show(t){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+['rhk','log','lap','set'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t));
+if(t==='log')renderLog();if(t==='lap')renderLap();if(t==='set'){$('sNama').value=S.prof.nama;$('sNip').value=S.prof.nip;$('sJab').value=S.prof.jab;$('sUnit').value=S.prof.unit}}
+
+// RHK
+let editRhk=null;
+function renderRhk(){
+ $('rhkList').innerHTML=S.rhk.length?S.rhk.map((r,i)=>{const n=S.log.filter(l=>l.rhk===r.id).length;
+ return `<div class="item"><div><b>RHK ${i+1}.</b> ${esc(r.nama)}<div class="sub">${esc(r.ind)||''}</div><span class="tag">${n} kegiatan</span></div>
+ <div style="white-space:nowrap"><button class="sm" onclick="ubahRhk('${r.id}')">Ubah</button> <button class="sm dg" onclick="hapusRhk('${r.id}')">Hapus</button></div></div>`}).join(''):'<div class="empty">Belum ada RHK. Tambahkan RHK pertama Anda di atas.</div>';
+}
+$('rhkAdd').onclick=()=>{const nama=$('rhkNama').value.trim();if(!nama)return alert('Uraian RHK wajib diisi.');
+ if(editRhk){const r=S.rhk.find(x=>x.id===editRhk);r.nama=nama;r.ind=$('rhkInd').value.trim()}else S.rhk.push({id:uid(),nama,ind:$('rhkInd').value.trim()});
+ resetRhk();save();renderRhk()};
+function resetRhk(){editRhk=null;$('rhkNama').value='';$('rhkInd').value='';$('rhkAdd').textContent='Simpan RHK';$('rhkCancel').classList.add('hide')}
+$('rhkCancel').onclick=resetRhk;
+function ubahRhk(id){const r=S.rhk.find(x=>x.id===id);editRhk=id;$('rhkNama').value=r.nama;$('rhkInd').value=r.ind||'';$('rhkAdd').textContent='Perbarui RHK';$('rhkCancel').classList.remove('hide');scrollTo(0,0)}
+function hapusRhk(id){const n=S.log.filter(l=>l.rhk===id).length;
+ if(!confirm(n?`RHK ini dipakai ${n} kegiatan; kegiatan itu akan kembali menjadi “belum terklasifikasi”. Hapus RHK?`:'Hapus RHK ini?'))return;
+ S.rhk=S.rhk.filter(r=>r.id!==id);S.log.forEach(l=>{if(l.rhk===id)l.rhk=''});save();renderRhk();renderLog()}
+
+// Log
+let editLog=null;
+$('lTgl').value=today;$('lFilter').value=today.slice(0,7);$('rTgl').value=today;$('rBln').value=today.slice(0,7);
+$('lAdd').onclick=()=>{
+ const o={tgl:$('lTgl').value,mulai:$('lMulai').value,selesai:$('lSelesai').value,ur:$('lUr').value.trim(),bukti:$('lBukti').value.trim()};
+ if(!S.rhk.length)return alert('Buat RHK terlebih dahulu.');
+ if(!o.tgl||!o.mulai||!o.selesai||!o.ur)return alert('Tanggal, jam, RHK, dan uraian wajib diisi.');
+ if(durasi(o.mulai,o.selesai)<=0)return alert('Jam selesai harus setelah jam mulai.');
+ if(editLog){const x=S.log.find(l=>l.id===editLog);if(x.ur!==o.ur)x.rhk='';Object.assign(x,o)}else S.log.push({id:uid(),rhk:'',...o});
+ editLog=null;$('lUr').value='';$('lBukti').value='';$('lAdd').textContent='Simpan kinerja';$('lCancel').classList.add('hide');
+ $('lFilter').value=o.tgl.slice(0,7);save();renderLog();renderRhk()};
+$('lCancel').onclick=()=>{editLog=null;$('lUr').value='';$('lBukti').value='';$('lAdd').textContent='Simpan kinerja';$('lCancel').classList.add('hide')};
+$('lFilter').onchange=renderLog;
+function renderLog(){
+ const f=$('lFilter').value;
+ const L=S.log.filter(l=>!f||l.tgl.startsWith(f)).sort((a,b)=>(b.tgl+b.mulai).localeCompare(a.tgl+a.mulai));
+ $('lList').innerHTML=L.length?L.map(l=>{const i=S.rhk.findIndex(r=>r.id===l.rhk);
+ return `<div class="item"><div><b>${tglID(l.tgl)}</b> · ${l.mulai}–${l.selesai} <span class="tag">${i>=0?'RHK '+(i+1):'Belum diklasifikasi'}</span><div>${esc(l.ur)}</div><div class="sub">Bukti: ${bukti(l.bukti)}</div><select onchange="setRhk('${l.id}',this.value)" style="width:auto;max-width:100%;margin-top:6px;font-size:13px">${rhkOpts(l.rhk)}</select></div>
+ <div style="white-space:nowrap"><button class="sm" onclick="ubahLog('${l.id}')">Ubah</button> <button class="sm dg" onclick="hapusLog('${l.id}')">Hapus</button></div></div>`}).join(''):'<div class="empty">Belum ada kinerja pada bulan ini.</div>';
+}
+function ubahLog(id){const l=S.log.find(x=>x.id===id);editLog=id;$('lTgl').value=l.tgl;$('lMulai').value=l.mulai;$('lSelesai').value=l.selesai;$('lUr').value=l.ur;$('lBukti').value=l.bukti||'';$('lAdd').textContent='Perbarui kinerja';$('lCancel').classList.remove('hide');scrollTo(0,0)}
+function hapusLog(id){if(!confirm('Hapus kegiatan ini?'))return;S.log=S.log.filter(l=>l.id!==id);save();renderLog();renderRhk()}
+
+// Klasifikasi RHK
+const rhkOpts=sel=>'<option value="">Belum diklasifikasi</option>'+S.rhk.map((r,i)=>`<option value="${r.id}"${r.id===sel?' selected':''}>RHK ${i+1}. ${esc(r.nama.slice(0,60))}</option>`).join('');
+function setRhk(id,v){S.log.find(l=>l.id===id).rhk=v;save();renderLog();renderRhk()}
+async function klasifikasiAI(){
+ const st=$('rStat');
+ if(!S.rhk.length)return alert('Buat RHK terlebih dahulu.');
+ const h=$('rJenis').value==='h',per=h?$('rTgl').value:$('rBln').value;
+ const T=S.log.filter(l=>per&&l.tgl.startsWith(per)&&($('rUlang').checked||!S.rhk.some(r=>r.id===l.rhk)));
+ if(!T.length){st.textContent='Semua kegiatan pada periode ini sudah terklasifikasi.';return}
+ let sample=null;try{sample=await claude.use('sample')}catch(e){}
+ if(!sample){st.textContent='Fitur AI tidak tersedia di tampilan ini. Anda tetap bisa memilih RHK manual di tab Kinerja Harian.';return}
+ const daftar=S.rhk.map((r,i)=>({no:i+1,uraian:r.nama,indikator:r.ind||''}));
+ $('rAI').disabled=true;let ok=0,nol=0;
+ try{
+  for(let a=0;a<T.length;a+=30){
+   const B=T.slice(a,a+30);st.textContent=`Mengklasifikasi ${Math.min(a+30,T.length)} dari ${T.length} kegiatan…`;
+   const keg=B.map((l,k)=>({id:k,uraian:l.ur,bukti:l.bukti||''}));
+   const prompt=`Anda membantu pegawai ASN di Indonesia mengelompokkan kinerja harian ke Rencana Hasil Kerja (RHK) yang paling sesuai.\n\nDaftar RHK:\n${JSON.stringify(daftar)}\n\nKegiatan harian:\n${JSON.stringify(keg)}\n\nUntuk setiap kegiatan pilih SATU nomor RHK yang paling relevan berdasarkan uraian. Jika benar-benar tidak ada yang cocok, isi 0.\nBalas HANYA berupa JSON array tanpa teks lain, contoh: [{"id":0,"rhk":2}]`;
+   const res=await sample.json(prompt);
+   (Array.isArray(res)?res:[]).forEach(x=>{const l=B[x.id],r=S.rhk[(+x.rhk)-1];if(!l)return;if(r){l.rhk=r.id;ok++}else{if($('rUlang').checked)l.rhk='';nol++}});
+   save();
+  }
+  st.textContent=`Selesai: ${ok} kegiatan terklasifikasi${nol?`, ${nol} tidak cocok dengan RHK mana pun`:''}. Periksa hasilnya, dan koreksi manual di tab Kinerja Harian bila perlu.`;
+ }catch(e){
+  st.textContent=e&&e.code==='not_granted'?'Izin AI ditolak. Klik tombol lagi dan setujui izinnya.':e&&e.code==='rate_limited'?'Terlalu banyak permintaan, coba lagi sebentar lagi.':'Klasifikasi gagal. Coba lagi, atau pilih RHK manual.';
+  save();
+ }
+ $('rAI').disabled=false;renderLap();renderRhk();
+}
+async function ringkasAI(){
+ const st=$('rStat'),per=$('rBln').value;
+ if(!per)return;
+ const G=S.rhk.map((r,i)=>({no:i+1,id:r.id,rhk:r.nama,keg:[...new Set(S.log.filter(l=>l.rhk===r.id&&l.tgl.startsWith(per)).map(l=>l.ur))].slice(0,100)})).filter(x=>x.keg.length);
+ if(!G.length){st.textContent='Belum ada kegiatan terklasifikasi pada bulan ini. Klik “Klasifikasi otomatis (AI)” dulu.';return}
+ let sample=null;try{sample=await claude.use('sample')}catch(e){}
+ if(!sample){st.textContent='Fitur AI tidak tersedia di tampilan ini.';return}
+ $('rRingkas').disabled=true;st.textContent='Meringkas rencana aksi…';
+ try{
+  const prompt=`Anda membantu pegawai ASN di Indonesia menyusun laporan kinerja bulanan. Untuk setiap RHK berikut, ringkas kumpulan uraian kegiatan harian menjadi 2–5 poin RENCANA AKSI yang menggambarkan apa yang dikerjakan selama bulan ini. Gabungkan kegiatan yang serupa, gunakan kalimat formal dan singkat yang diawali kata kerja, dan jangan menambahkan hal yang tidak ada dalam uraian.\n\nData:\n${JSON.stringify(G.map(x=>({no:x.no,rhk:x.rhk,kegiatan:x.keg})))}\n\nBalas HANYA berupa JSON array tanpa teks lain, contoh: [{"no":1,"rencana_aksi":["Mengelola ...","Menyusun ..."]}]`;
+  const res=await sample.json(prompt);
+  S.ringkas=S.ringkas||{};let n=0;
+  (Array.isArray(res)?res:[]).forEach(x=>{const g=G.find(y=>y.no===+x.no);if(g&&Array.isArray(x.rencana_aksi)&&x.rencana_aksi.length){S.ringkas[per+'|'+g.id]=x.rencana_aksi.map(String);n++}});
+  save();st.textContent=`Rencana aksi diringkas untuk ${n} RHK. Ringkas ulang bila Anda menambah atau mengubah kegiatan.`;
+ }catch(e){
+  st.textContent=e&&e.code==='not_granted'?'Izin AI ditolak. Klik tombol lagi dan setujui izinnya.':e&&e.code==='rate_limited'?'Terlalu banyak permintaan, coba lagi sebentar lagi.':'Peringkasan gagal. Coba lagi.';
+ }
+ $('rRingkas').disabled=false;renderLap();
+}
+$('rRingkas').onclick=ringkasAI;
+$('rAI').onclick=klasifikasiAI;
+
+// Laporan
+$('rJenis').onchange=()=>{const h=$('rJenis').value==='h';$('rTglBox').classList.toggle('hide',!h);$('rBlnBox').classList.toggle('hide',h);$('rRingkas').classList.toggle('hide',h);renderLap()};
+$('rTgl').onchange=$('rBln').onchange=renderLap;
+$('rCetak').onclick=()=>window.print();
+function renderLap(){
+ const h=$('rJenis').value==='h',p=S.prof;
+ const per=h?$('rTgl').value:$('rBln').value;
+ const L=S.log.filter(l=>per&&l.tgl.startsWith(per)).sort((a,b)=>(a.tgl+a.mulai).localeCompare(b.tgl+b.mulai));
+ const judul=h?`LAPORAN KINERJA HARIAN`:`LAPORAN KINERJA BULANAN`;
+ const periode=!per?'':h?tglID(per):`${BLN[+per.slice(5,7)-1]} ${per.slice(0,4)}`;
+ let out=`<div style="text-align:center"><h2 style="margin:0">${judul}</h2><div>Periode: ${periode}</div></div>
+ <table style="margin:12px 0;border:0"><tr><td style="border:0;width:110px">Nama</td><td style="border:0">: ${esc(p.nama)}</td></tr>
+ <tr><td style="border:0">NIP</td><td style="border:0">: ${esc(p.nip)||'-'}</td></tr>
+ <tr><td style="border:0">Jabatan</td><td style="border:0">: ${esc(p.jab)}</td></tr>
+ <tr><td style="border:0">Unit kerja</td><td style="border:0">: ${esc(p.unit)}</td></tr></table>`;
+ if(!L.length){$('laporan').innerHTML=out+'<div class="empty">Tidak ada kinerja pada periode ini.</div>';return}
+ if(!h){
+  const rows=S.rhk.map((r,i)=>({r,i,G:L.filter(l=>l.rhk===r.id)})).filter(x=>x.G.length);
+  const U=L.filter(l=>!S.rhk.some(r=>r.id===l.rhk));
+  const rencana=x=>{const s=(S.ringkas||{})[per+'|'+x.r.id];const arr=s&&s.length?s:[...new Set(x.G.map(l=>l.ur))];
+   return '<ul style="margin:0;padding-left:18px">'+arr.map(t=>`<li>${esc(t)}</li>`).join('')+'</ul>'};
+  const bkt=G=>{const B=[...new Set(G.map(l=>l.bukti).filter(Boolean))];
+   return B.length?'<ol style="margin:0;padding-left:18px">'+B.map((b,k)=>/^https?:\/\//i.test(b)?`<li><a href="${esc(b)}" target="_blank" rel="noopener">Bukti ${k+1}</a></li>`:`<li>${esc(b)}</li>`).join('')+'</ol>':'-'};
+  out+=`<div class="tbl"><table><thead><tr><th style="width:36px">No</th><th style="width:28%">RHK</th><th>Rencana aksi</th><th style="width:20%">Bukti dukung</th></tr></thead><tbody>`+
+  rows.map((x,k)=>`<tr><td>${k+1}</td><td><b>RHK ${x.i+1}.</b> ${esc(x.r.nama)}${x.r.ind?`<div class="sub">Indikator: ${esc(x.r.ind)}</div>`:''}</td><td>${rencana(x)}</td><td>${bkt(x.G)}</td></tr>`).join('')+
+  (U.length?`<tr><td></td><td>Belum terklasifikasi</td><td><span class="noprint">${U.length} kegiatan belum diklasifikasi. Klik “Klasifikasi otomatis (AI)”.</span></td><td>-</td></tr>`:'')+
+  `</tbody></table></div><div class="sub">Total: ${L.length} kegiatan · ${fmtDur(L.reduce((a,l)=>a+durasi(l.mulai,l.selesai),0))}</div>`;
+  out+=`<div style="margin-top:30px;text-align:right">${esc(p.nama)}<br><br><br>__________________</div>`;
+  $('laporan').innerHTML=out;return}
+ let total=0;
+ S.rhk.forEach((r,i)=>{const G=L.filter(l=>l.rhk===r.id);if(!G.length)return;
+  const m=G.reduce((a,l)=>a+durasi(l.mulai,l.selesai),0);total+=m;
+  out+=`<div class="grp">RHK ${i+1}. ${esc(r.nama)}</div>${r.ind?`<div class="sub">Indikator: ${esc(r.ind)}</div>`:''}
+  <div class="tbl"><table><thead><tr><th style="width:36px">No</th><th>Tanggal</th><th>Jam</th><th>Uraian kegiatan</th><th>Bukti dukung</th></tr></thead><tbody>`+
+  G.map((l,k)=>`<tr><td>${k+1}</td><td>${tglPendek(l.tgl)}</td><td>${l.mulai}–${l.selesai}</td><td>${esc(l.ur)}</td><td>${bukti(l.bukti)}</td></tr>`).join('')+
+  `</tbody></table></div><div class="sub">Subtotal: ${G.length} kegiatan · ${fmtDur(m)}</div>`});
+ const U=L.filter(l=>!S.rhk.some(r=>r.id===l.rhk));
+ if(U.length){const m=U.reduce((a,l)=>a+durasi(l.mulai,l.selesai),0);total+=m;
+  out+=`<div class="grp">Belum terklasifikasi</div><div class="sub noprint">Klik “Klasifikasi otomatis (AI)” untuk mengelompokkan ke RHK.</div><div class="tbl"><table><thead><tr><th style="width:36px">No</th><th>Tanggal</th><th>Jam</th><th>Uraian kegiatan</th><th>Bukti dukung</th></tr></thead><tbody>`+
+  U.map((l,k)=>`<tr><td>${k+1}</td><td>${tglPendek(l.tgl)}</td><td>${l.mulai}–${l.selesai}</td><td>${esc(l.ur)}</td><td>${bukti(l.bukti)}</td></tr>`).join('')+`</tbody></table></div><div class="sub">Subtotal: ${U.length} kegiatan · ${fmtDur(m)}</div>`}
+ if(!h){out+=`<div class="grp">Rekapitulasi per RHK</div><div class="tbl"><table><thead><tr><th>RHK</th><th>Jumlah kegiatan</th><th>Total jam</th></tr></thead><tbody>`+
+  S.rhk.map((r,i)=>{const G=L.filter(l=>l.rhk===r.id);return `<tr><td>RHK ${i+1}. ${esc(r.nama)}</td><td>${G.length}</td><td>${fmtDur(G.reduce((a,l)=>a+durasi(l.mulai,l.selesai),0))}</td></tr>`}).join('')+
+  (U.length?`<tr><td>Belum terklasifikasi</td><td>${U.length}</td><td>${fmtDur(U.reduce((a,l)=>a+durasi(l.mulai,l.selesai),0))}</td></tr>`:'')+`<tr><th>Total</th><th>${L.length}</th><th>${fmtDur(total)}</th></tr></tbody></table></div>`}
+ out+=`<div style="margin-top:30px;text-align:right">${esc(p.nama)}<br><br><br>__________________</div>`;
+ $('laporan').innerHTML=out;
+}
+
+// Pengaturan
+$('sSimpan').onclick=()=>{S.prof={nama:$('sNama').value.trim(),nip:$('sNip').value.trim(),jab:$('sJab').value.trim(),unit:$('sUnit').value.trim()};save();alert('Identitas tersimpan.')};
+$('bExp').onclick=()=>{const a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(S));a.download='cadangan-kinerja-'+today+'.json';document.body.appendChild(a);a.click();a.remove()};
+$('bImp').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.rhk)||!Array.isArray(o.log))throw 0;if(!confirm('Data saat ini akan diganti dengan cadangan. Lanjutkan?'))return;S=Object.assign(S,o);save();renderRhk();renderLog();alert('Data dipulihkan.')}catch(x){alert('Berkas cadangan tidak valid.')}};r.readAsText(f)};
+
+renderRhk();
+</script>
+</body>
+</html>
