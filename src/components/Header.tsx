@@ -48,9 +48,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <header className="no-print bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 transition-colors">
+    <header className="app-header no-print bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-16">
+        <div className="flex flex-col items-stretch justify-center gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:py-0 sm:h-16">
           {/* Logo & Title */}
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Right actions: Google Login / Profile, Cloud Save Button, print, theme */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="flex items-center justify-end gap-2 sm:gap-2.5">
             {/* Google Sign In Button if not signed in */}
             {!currentUser ? (
               <button
@@ -113,6 +113,8 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   type="button"
+                  aria-label="Menu akun Google"
+                  aria-expanded={showUserMenu}
                   className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700/80 text-xs transition-colors cursor-pointer"
                 >
                   {currentUser.photoURL ? (
@@ -172,18 +174,20 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'
               } disabled:opacity-60 disabled:cursor-not-allowed`}
               title="Cadangkan dan simpan seluruh data ke Cloud"
+              aria-label={isSavingCloud ? 'Menyimpan ke cloud' : 'Simpan ke cloud'}
+              aria-busy={isSavingCloud}
             >
               {isSavingCloud ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span className="hidden sm:inline">Menyimpan...</span>
-                  <span className="sm:hidden text-[11px]">...</span>
+                  <span className="sm:hidden text-[11px]">Menyimpan...</span>
                 </>
               ) : (
                 <>
                   <CloudUpload className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Simpan Cloud</span>
-                  <span className="sm:hidden text-[11px]">Save</span>
+                  <span className="sm:hidden text-[11px]">Simpan Cloud</span>
                 </>
               )}
             </button>

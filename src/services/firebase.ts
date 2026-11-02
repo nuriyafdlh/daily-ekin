@@ -3,7 +3,6 @@ import {
   getFirestore,
   doc,
   setDoc,
-  getDoc,
   getDocFromServer,
   collection,
   query,
@@ -100,7 +99,18 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     cachedAccessToken = credential?.accessToken || null;
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
-    console.error('Google Sign-In Error:', error);
+    if (error?.code === 'auth/unauthorized-domain') {
+      const hostname = window.location.hostname;
+      const domainError = new Error(
+        `Domain ${hostname} belum diizinkan untuk login Google. ` +
+        'Administrator perlu membuka Firebase Console → Authentication → Settings → ' +
+        `Authorized domains, lalu menambahkan ${hostname} tanpa https:// atau path. ` +
+        'Setelah disimpan, muat ulang halaman dan coba masuk kembali.'
+      );
+      // Preserve the Firebase code for callers that handle authentication errors.
+      Object.assign(domainError, { code: error.code });
+      throw domainError;
+    }
     throw error;
   } finally {
     isSigningIn = false;
@@ -122,6 +132,38 @@ export const logOut = async (): Promise<void> => {
   cachedAccessToken = null;
 };
 
+/** Bound the UI wait; a Firestore write may still complete after this timeout. */
+async function waitForCloud<T>(operation: Promise<T>, writing = false): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(writing
+          ? 'Konfirmasi penyimpanan cloud belum diterima setelah 15 detik. Data lokal tetap tersimpan. Penyimpanan mungkin masih berjalan; periksa koneksi dan muat data cloud sebelum mencoba lagi.'
+          : 'Cloud belum merespons setelah 15 detik. Periksa koneksi internet lalu coba lagi.'
+        )), 15_000);
+      }),
+    ]);
+  } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      throw new Error('Akses cloud ditolak. Administrator perlu memeriksa aturan akses Firestore untuk akun Anda. Data lokal tetap tersimpan.');
+    }
+    if (error?.code === 'unavailable') {
+      throw new Error('Layanan cloud belum dapat dihubungi. Periksa koneksi internet lalu coba lagi. Data lokal tetap tersimpan.');
+    }
+    throw error;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+function requireCloudConnection() {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new Error('Perangkat sedang offline. Data lokal tetap tersimpan; sambungkan internet sebelum menyimpan ke cloud.');
+  }
+}
+
 /**
  * Save current active state to cloud Firestore
  */
@@ -133,10 +175,11 @@ export const saveStateToCloud = async (
     throw new Error('Silakan masuk dengan akun Google terlebih dahulu untuk menyinkronkan data ke cloud.');
   }
 
+  requireCloudConnection();
   const now = new Date().toISOString();
   const docRef = doc(db, 'cloud_state', user.uid);
 
-  await setDoc(
+  await waitForCloud(setDoc(
     docRef,
     {
       userId: user.uid,
@@ -150,7 +193,7 @@ export const saveStateToCloud = async (
       ringkas: state.ringkas || {},
     },
     { merge: true }
-  );
+  ), true);
 
   return { success: true, updatedAt: now };
 };
@@ -167,11 +210,12 @@ export const createCloudBackupSnapshot = async (
     throw new Error('Silakan masuk dengan akun Google untuk membuat titik cadangan di cloud.');
   }
 
+  requireCloudConnection();
   const now = new Date().toISOString();
   const backupId = 'bak_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const backupDocRef = doc(db, 'backups', backupId);
 
-  await setDoc(backupDocRef, {
+  await waitForCloud(setDoc(backupDocRef, {
     id: backupId,
     userId: user.uid,
     userEmail: user.email || '',
@@ -185,7 +229,7 @@ export const createCloudBackupSnapshot = async (
     rhk: state.rhk,
     log: state.log,
     ringkas: state.ringkas || {},
-  });
+  }), true);
 
   return { success: true, backupId, createdAt: now };
 };
@@ -200,7 +244,7 @@ export const loadStateFromCloud = async (): Promise<AppState | null> => {
   }
 
   const docRef = doc(db, 'cloud_state', user.uid);
-  const snapshot = await getDoc(docRef);
+  const snapshot = await waitForCloud(getDocFromServer(docRef));
 
   if (!snapshot.exists()) {
     return null;
@@ -235,7 +279,7 @@ export const fetchUserBackups = async (): Promise<CloudBackupItem[]> => {
 
   const backupsRef = collection(db, 'backups');
   const q = query(backupsRef, where('userId', '==', user.uid));
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await waitForCloud(getDocs(q));
 
   const list: CloudBackupItem[] = [];
   querySnapshot.forEach((docSnap) => {
@@ -262,6 +306,6 @@ export const fetchUserBackups = async (): Promise<CloudBackupItem[]> => {
  */
 export const deleteCloudBackupDoc = async (backupId: string): Promise<boolean> => {
   const docRef = doc(db, 'backups', backupId);
-  await deleteDoc(docRef);
+  await waitForCloud(deleteDoc(docRef), true);
   return true;
 };
