@@ -16,7 +16,6 @@ import {
   logOut,
   saveStateToCloud,
   loadStateFromCloud,
-  testConnection,
 } from './services/firebase';
 
 export default function App() {
@@ -55,7 +54,6 @@ export default function App() {
 
   // Auth state listener on boot
   useEffect(() => {
-    testConnection().catch(() => {});
     const unsubscribe = initAuth(
       async (user) => {
         setCurrentUser(user);
