@@ -4,13 +4,12 @@ import {
   doc,
   setDoc,
   getDoc,
-  getDocFromServer,
   collection,
   query,
   where,
   getDocs,
   deleteDoc,
-} from 'firebase/firestore';
+} from 'firebase/firestore/lite';
 import {
   getAuth,
   signInWithPopup,
@@ -21,8 +20,10 @@ import {
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { AppState, UserProfile, RhkItem, LogItem } from '../types';
+import { waitForCloudSave } from '../utils/cloudRequest';
 
-// Initialize Firebase
+// One-shot backups use HTTP directly, without a persistent streaming connection
+// or an offline write queue that can leave the save button waiting indefinitely.
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 const configAny = firebaseConfig as Record<string, any>;
@@ -61,7 +62,7 @@ export interface CloudBackupItem {
  */
 export const testConnection = async (): Promise<boolean> => {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    await getDoc(doc(db, 'test', 'connection'));
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
@@ -136,7 +137,7 @@ export const saveStateToCloud = async (
   const now = new Date().toISOString();
   const docRef = doc(db, 'cloud_state', user.uid);
 
-  await setDoc(
+  await waitForCloudSave(setDoc(
     docRef,
     {
       userId: user.uid,
@@ -150,7 +151,7 @@ export const saveStateToCloud = async (
       ringkas: state.ringkas || {},
     },
     { merge: true }
-  );
+  ));
 
   return { success: true, updatedAt: now };
 };
@@ -171,7 +172,7 @@ export const createCloudBackupSnapshot = async (
   const backupId = 'bak_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const backupDocRef = doc(db, 'backups', backupId);
 
-  await setDoc(backupDocRef, {
+  await waitForCloudSave(setDoc(backupDocRef, {
     id: backupId,
     userId: user.uid,
     userEmail: user.email || '',
@@ -185,7 +186,7 @@ export const createCloudBackupSnapshot = async (
     rhk: state.rhk,
     log: state.log,
     ringkas: state.ringkas || {},
-  });
+  }));
 
   return { success: true, backupId, createdAt: now };
 };
